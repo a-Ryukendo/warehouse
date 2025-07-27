@@ -9,12 +9,17 @@ from .settings import *
 DEBUG = False
 
 # Update this with your PythonAnywhere domain
-ALLOWED_HOSTS = ['YOUR_USERNAME.pythonanywhere.com', 'www.YOUR_USERNAME.pythonanywhere.com']
+ALLOWED_HOSTS = ['IRyukendo.pythonanywhere.com', 'www.IRyukendo.pythonanywhere.com']
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# For development on PythonAnywhere, also serve static files
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Media files
 MEDIA_URL = '/media/'

@@ -14,11 +14,11 @@ ALLOWED_HOSTS = ['YOUR_USERNAME.pythonanywhere.com', 'www.YOUR_USERNAME.pythonan
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/YOUR_USERNAME/YOUR_REPO_NAME/staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/home/YOUR_USERNAME/YOUR_REPO_NAME/media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -41,7 +41,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.FileHandler',
-            'filename': '/home/YOUR_USERNAME/YOUR_REPO_NAME/django.log',
+            'filename': os.path.join(BASE_DIR, 'django.log'),
         },
     },
     'loggers': {

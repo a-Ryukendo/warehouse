@@ -125,13 +125,71 @@ def add_transaction(request):
     if request.method == 'POST':
         form = StockTransactionForm(request.POST)
         if form.is_valid():
-            transaction_obj = form.save()
-            messages.success(request, 'Transaction added successfully!')
-            return redirect('inventory:transaction_detail', transaction_id=transaction_obj.transaction_id)
+            # Get product data from form
+            product_ids = request.POST.getlist('product_id[]')
+            quantities = request.POST.getlist('quantity[]')
+            unit_prices = request.POST.getlist('unit_price[]')
+            
+            # Validate that we have at least one product
+            if not product_ids or not product_ids[0]:
+                messages.error(request, 'At least one product is required.')
+                products = Product.objects.all()
+                return render(request, 'inventory/transaction_form.html', {
+                    'form': form, 
+                    'title': 'Add Transaction',
+                    'products': products
+                })
+            
+            try:
+                with transaction.atomic():
+                    # Save the transaction
+                    transaction_obj = form.save()
+                    
+                    # Save transaction details
+                    for i in range(len(product_ids)):
+                        if product_ids[i]:  # Skip empty product selections
+                            product = Product.objects.get(product_id=product_ids[i])
+                            quantity = Decimal(quantities[i])
+                            unit_price = Decimal(unit_prices[i] or 0)
+                            
+                            # Create stock detail
+                            StockDetail.objects.create(
+                                transaction=transaction_obj,
+                                product=product,
+                                quantity=quantity,
+                                unit_price=unit_price
+                            )
+                            
+                            # Update inventory balance
+                            balance, created = InventoryBalance.objects.get_or_create(product=product)
+                            if transaction_obj.transaction_type == 'IN':
+                                balance.current_quantity += quantity
+                            elif transaction_obj.transaction_type == 'OUT':
+                                balance.current_quantity -= quantity
+                            balance.save()
+                    
+                    messages.success(request, 'Transaction added successfully!')
+                    return redirect('inventory:transaction_detail', transaction_id=transaction_obj.transaction_id)
+                    
+            except Exception as e:
+                messages.error(request, f'Error creating transaction: {str(e)}')
+                products = Product.objects.all()
+                return render(request, 'inventory/transaction_form.html', {
+                    'form': form, 
+                    'title': 'Add Transaction',
+                    'products': products
+                })
     else:
         form = StockTransactionForm()
     
-    return render(request, 'inventory/transaction_form.html', {'form': form, 'title': 'Add Transaction'})
+    # Get all products for the dropdown
+    products = Product.objects.all()
+    
+    return render(request, 'inventory/transaction_form.html', {
+        'form': form, 
+        'title': 'Add Transaction',
+        'products': products
+    })
 
 
 def inventory_report(request):

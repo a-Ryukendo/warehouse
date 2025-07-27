@@ -5,15 +5,16 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
         <div class="card shadow">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">{{ title }}</h6>
             </div>
             <div class="card-body">
-                <form method="post">
+                <form method="post" id="transactionForm">
                     {% csrf_token %}
                     
+                    <!-- Transaction Header -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -48,37 +49,87 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="{{ form.reference_no.id_for_label }}" class="form-label">
-                            Reference Number
-                        </label>
-                        {{ form.reference_no }}
-                        {% if form.reference_no.errors %}
-                            <div class="text-danger">
-                                {% for error in form.reference_no.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.reference_no.id_for_label }}" class="form-label">
+                                    Reference Number
+                                </label>
+                                {{ form.reference_no }}
+                                {% if form.reference_no.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.reference_no.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Optional reference number (e.g., PO-001, SO-001)</div>
                             </div>
-                        {% endif %}
-                        <div class="form-text">Optional reference number (e.g., PO-001, SO-001)</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    Notes
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.notes.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Optional notes about this transaction</div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="{{ form.notes.id_for_label }}" class="form-label">
-                            Notes
-                        </label>
-                        {{ form.notes }}
-                        {% if form.notes.errors %}
-                            <div class="text-danger">
-                                {% for error in form.notes.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
+                    <!-- Product Items Section -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">Product Items</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="productItems">
+                                <div class="product-item row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Product <span class="text-danger">*</span></label>
+                                        <select name="product_id[]" class="form-control" required>
+                                            <option value="">Select Product</option>
+                                            {% for product in products %}
+                                                <option value="{{ product.product_id }}">{{ product.product_id }} - {{ product.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                                        <input type="number" name="quantity[]" class="form-control" step="0.01" min="0.01" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Unit Price</label>
+                                        <input type="number" name="unit_price[]" class="form-control" step="0.01" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Total</label>
+                                        <input type="text" class="form-control total-amount" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-danger btn-sm remove-item" style="display: none;">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        {% endif %}
-                        <div class="form-text">Optional notes about this transaction</div>
+                            
+                            <button type="button" class="btn btn-success btn-sm" id="addItem">
+                                <i class="fas fa-plus"></i> Add Another Item
+                            </button>
+                        </div>
                     </div>
                     
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between mt-4">
                         <a href="{% url 'inventory:transaction_list' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back to Transactions
                         </a>
@@ -91,4 +142,43 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addItemBtn = document.getElementById('addItem');
+    const productItems = document.getElementById('productItems');
+    
+    // Add new item
+    addItemBtn.addEventListener('click', function() {
+        const newItem = productItems.children[0].cloneNode(true);
+        newItem.querySelectorAll('input, select').forEach(input => {
+            input.value = '';
+        });
+        newItem.querySelector('.remove-item').style.display = 'block';
+        productItems.appendChild(newItem);
+    });
+    
+    // Remove item
+    productItems.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
+            if (productItems.children.length > 1) {
+                e.target.closest('.product-item').remove();
+            }
+        }
+    });
+    
+    // Calculate totals
+    productItems.addEventListener('input', function(e) {
+        if (e.target.name === 'quantity[]' || e.target.name === 'unit_price[]') {
+            const item = e.target.closest('.product-item');
+            const quantity = parseFloat(item.querySelector('input[name="quantity[]"]').value) || 0;
+            const unitPrice = parseFloat(item.querySelector('input[name="unit_price[]"]').value) || 0;
+            const total = quantity * unitPrice;
+            item.querySelector('.total-amount').value = total.toFixed(2);
+        }
+    });
+});
+</script>
 {% endblock %} 

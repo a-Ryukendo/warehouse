@@ -1,0 +1,201 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Dashboard - Warehouse Inventory System{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Products</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_products }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Transactions</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_transactions }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exchange-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Active Products</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ inventory_balances.count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Total Value</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ total_value|floatformat:2 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Current Inventory -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Current Inventory</h6>
+                <a href="{% url 'inventory:inventory_report' %}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if inventory_balances %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Product ID</th>
+                                    <th>Name</th>
+                                    <th>Current Stock</th>
+                                    <th>Unit</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for balance in inventory_balances|slice:":10" %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'inventory:product_detail' balance.product.product_id %}">
+                                            {{ balance.product.product_id }}
+                                        </a>
+                                    </td>
+                                    <td>{{ balance.product.name }}</td>
+                                    <td>
+                                        <span class="badge {% if balance.current_quantity > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ balance.current_quantity }}
+                                        </span>
+                                    </td>
+                                    <td>{{ balance.product.unit }}</td>
+                                    <td>{{ balance.last_updated|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No inventory data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
+                <a href="{% url 'inventory:transaction_list' %}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                    <div class="list-group list-group-flush">
+                        {% for transaction in recent_transactions %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    <a href="{% url 'inventory:transaction_detail' transaction.transaction_id %}">
+                                        #{{ transaction.transaction_id }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">{{ transaction.transaction_date|date:"M d" }}</small>
+                            </div>
+                            <p class="mb-1">
+                                <span class="badge {% if transaction.transaction_type == 'IN' %}bg-success{% elif transaction.transaction_type == 'OUT' %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ transaction.get_transaction_type_display }}
+                                </span>
+                                {% if transaction.reference_no %}{{ transaction.reference_no }}{% endif %}
+                            </p>
+                            <small class="text-muted">
+                                {{ transaction.details.count }} item{{ transaction.details.count|pluralize }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent transactions.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'inventory:add_product' %}" class="btn btn-primary btn-block w-100">
+                            <i class="fas fa-plus me-2"></i>Add Product
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'inventory:add_transaction' %}" class="btn btn-success btn-block w-100">
+                            <i class="fas fa-plus me-2"></i>Add Transaction
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'inventory:product_list' %}" class="btn btn-info btn-block w-100">
+                            <i class="fas fa-list me-2"></i>View Products
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'inventory:inventory_report' %}" class="btn btn-warning btn-block w-100">
+                            <i class="fas fa-chart-bar me-2"></i>Inventory Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

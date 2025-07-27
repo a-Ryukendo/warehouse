@@ -1,0 +1,167 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}{{ product.name }} - Warehouse Inventory System{% endblock %}
+{% block page_title %}{{ product.name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'inventory:edit_product' product.product_id %}" class="btn btn-warning">
+    <i class="fas fa-edit me-2"></i>Edit Product
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Product Information -->
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Product Information</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Product ID:</strong></td>
+                        <td>{{ product.product_id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>{{ product.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Unit:</strong></td>
+                        <td>{{ product.unit }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Description:</strong></td>
+                        <td>
+                            {% if product.description %}
+                                {{ product.description }}
+                            {% else %}
+                                <span class="text-muted">No description</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Created:</strong></td>
+                        <td>{{ product.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Last Updated:</strong></td>
+                        <td>{{ product.updated_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Inventory -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Current Inventory</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <h3 class="text-primary">{{ balance.current_quantity }}</h3>
+                            <p class="text-muted">{{ product.unit }}</p>
+                            <span class="badge {% if balance.current_quantity > 10 %}bg-success{% elif balance.current_quantity > 0 %}bg-warning{% else %}bg-danger{% endif %} fs-6">
+                                {% if balance.current_quantity > 10 %}
+                                    In Stock
+                                {% elif balance.current_quantity > 0 %}
+                                    Low Stock
+                                {% else %}
+                                    Out of Stock
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <h6 class="text-muted">Last Updated</h6>
+                            <p>{{ balance.last_updated|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction History -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Transaction History</h6>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Transaction ID</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Amount</th>
+                                    <th>Reference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detail in transactions %}
+                                <tr>
+                                    <td>{{ detail.transaction.transaction_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'inventory:transaction_detail' detail.transaction.transaction_id %}">
+                                            #{{ detail.transaction.transaction_id }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if detail.transaction.transaction_type == 'IN' %}bg-success{% elif detail.transaction.transaction_type == 'OUT' %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ detail.transaction.get_transaction_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ detail.quantity }}</td>
+                                    <td>${{ detail.unit_price }}</td>
+                                    <td>${{ detail.total_amount }}</td>
+                                    <td>
+                                        {% if detail.transaction.reference_no %}
+                                            {{ detail.transaction.reference_no }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No transaction history</h5>
+                        <p class="text-muted">This product has no transactions yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'inventory:product_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Products
+            </a>
+            <a href="{% url 'inventory:add_transaction' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Transaction
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

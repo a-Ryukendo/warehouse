@@ -1,0 +1,128 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Transaction #{{ transaction.transaction_id }} - Warehouse Inventory System{% endblock %}
+{% block page_title %}Transaction #{{ transaction.transaction_id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Transaction Information -->
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Transaction Information</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Transaction ID:</strong></td>
+                        <td>#{{ transaction.transaction_id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type:</strong></td>
+                        <td>
+                            <span class="badge {% if transaction.transaction_type == 'IN' %}bg-success{% elif transaction.transaction_type == 'OUT' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ transaction.get_transaction_type_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Date:</strong></td>
+                        <td>{{ transaction.transaction_date|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reference:</strong></td>
+                        <td>
+                            {% if transaction.reference_no %}
+                                {{ transaction.reference_no }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Items:</strong></td>
+                        <td>{{ details.count }} item{{ details.count|pluralize }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Created:</strong></td>
+                        <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                </table>
+                
+                {% if transaction.notes %}
+                <div class="mt-3">
+                    <h6>Notes:</h6>
+                    <p class="text-muted">{{ transaction.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Items -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Transaction Items</h6>
+            </div>
+            <div class="card-body">
+                {% if details %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Product ID</th>
+                                    <th>Product Name</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detail in details %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'inventory:product_detail' detail.product.product_id %}">
+                                            {{ detail.product.product_id }}
+                                        </a>
+                                    </td>
+                                    <td>{{ detail.product.name }}</td>
+                                    <td>{{ detail.quantity }} {{ detail.product.unit }}</td>
+                                    <td>${{ detail.unit_price }}</td>
+                                    <td>${{ detail.total_amount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong>${{ total_amount }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No items found</h5>
+                        <p class="text-muted">This transaction has no items.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'inventory:transaction_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Transactions
+            </a>
+            <a href="{% url 'inventory:add_transaction' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add New Transaction
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

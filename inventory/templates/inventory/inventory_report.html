@@ -1,0 +1,157 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Inventory Report - Warehouse Inventory System{% endblock %}
+{% block page_title %}Inventory Report{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Current Inventory Levels</h6>
+    </div>
+    <div class="card-body">
+        <!-- Search Form -->
+        <form method="get" class="mb-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="search" value="{{ search_query }}" 
+                               placeholder="Search by product name or ID...">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        {% if search_query %}
+                            <a href="{% url 'inventory:inventory_report' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% if balances %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Product ID</th>
+                            <th>Product Name</th>
+                            <th>Current Stock</th>
+                            <th>Unit</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for balance in balances %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'inventory:product_detail' balance.product.product_id %}">
+                                    {{ balance.product.product_id }}
+                                </a>
+                            </td>
+                            <td>{{ balance.product.name }}</td>
+                            <td>
+                                <span class="fw-bold">{{ balance.current_quantity }}</span>
+                            </td>
+                            <td>{{ balance.product.unit }}</td>
+                            <td>
+                                {% if balance.current_quantity > 10 %}
+                                    <span class="badge bg-success">In Stock</span>
+                                {% elif balance.current_quantity > 0 %}
+                                    <span class="badge bg-warning">Low Stock</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ balance.last_updated|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'inventory:product_detail' balance.product.product_id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'inventory:add_transaction' %}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ balances|length }}</h5>
+                            <p class="card-text">Total Products</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                {% for balance in balances %}
+                                    {% if balance.current_quantity > 10 %}
+                                        {% if forloop.first %}{% endif %}
+                                        {% if not forloop.last %}{% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="card-text">In Stock</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                {% for balance in balances %}
+                                    {% if balance.current_quantity > 0 and balance.current_quantity <= 10 %}
+                                        {% if forloop.first %}{% endif %}
+                                        {% if not forloop.last %}{% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="card-text">Low Stock</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                {% for balance in balances %}
+                                    {% if balance.current_quantity == 0 %}
+                                        {% if forloop.first %}{% endif %}
+                                        {% if not forloop.last %}{% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </h5>
+                            <p class="card-text">Out of Stock</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No inventory data found</h5>
+                <p class="text-muted">
+                    {% if search_query %}
+                        No products match your search criteria.
+                    {% else %}
+                        No products have been added to the inventory yet.
+                    {% endif %}
+                </p>
+                <a href="{% url 'inventory:add_product' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Product
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

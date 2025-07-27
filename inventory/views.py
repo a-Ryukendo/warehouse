@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator
 from django.utils import timezone
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Avg
 import json
 from decimal import Decimal
 
@@ -25,7 +25,22 @@ def index(request):
     # Get summary statistics
     total_products = Product.objects.count()
     total_transactions = StockTransaction.objects.count()
-    total_value = sum(balance.current_quantity * Decimal('0') for balance in inventory_balances)  # Placeholder for actual value calculation
+    
+    # Calculate total inventory value
+    total_value = Decimal('0')
+    for balance in inventory_balances:
+        # Get the latest unit price for this product from recent transactions
+        latest_detail = StockDetail.objects.filter(
+            product=balance.product
+        ).order_by('-transaction__transaction_date').first()
+        
+        if latest_detail:
+            # Use the latest unit price, or average if multiple prices exist
+            avg_price = StockDetail.objects.filter(
+                product=balance.product
+            ).aggregate(avg_price=Avg('unit_price'))['avg_price'] or Decimal('0')
+            
+            total_value += balance.current_quantity * avg_price
     
     context = {
         'inventory_balances': inventory_balances,
